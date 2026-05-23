@@ -1,0 +1,6 @@
+{
+  "name": "Personal Blog & Analytics Dashboard",
+  "description": "A personal blog writing workspace and dashboard featuring full markdown drafting, rich analytics tracking, secure login, reader search, tag filtering, and email newsletter integration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
