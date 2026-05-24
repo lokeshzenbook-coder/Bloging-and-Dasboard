@@ -1,20 +1,30 @@
-# ---------- Stage 1: Dependencies ----------
-FROM node:20-alpine AS deps
+# syntax=docker/dockerfile:1.7
+
+# =========================================================
+# Stage 1 - Base Dependencies
+# =========================================================
+FROM node:22-alpine3.22 AS deps
+
+# Install tini for proper signal handling
+RUN apk add --no-cache libc6-compat
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy only dependency files first for better layer caching
+COPY package.json package-lock.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies using clean reproducible install
+RUN npm ci --include=dev \
+    && npm cache clean --force
 
-# ---------- Stage 2: Build ----------
-FROM node:20-alpine AS builder
+# =========================================================
+# Stage 2 - Build Application
+# =========================================================
+FROM node:22-alpine3.22 AS builder
 
 WORKDIR /app
 
-# Copy installed node_modules
+# Reuse dependencies layer
 COPY --from=deps /app/node_modules ./node_modules
 
 # Copy application source
@@ -23,25 +33,29 @@ COPY . .
 # Build TypeScript application
 RUN npm run build
 
-# Remove dev dependencies after build
+# Remove unnecessary files
+RUN rm -rf src tests docs .github
+
+# Remove development dependencies
 RUN npm prune --omit=dev
 
-# ---------- Stage 3: Production ----------
-FROM gcr.io/distroless/nodejs20-debian12
+# =========================================================
+# Stage 3 - Production Runtime
+# =========================================================
+FROM gcr.io/distroless/nodejs22-debian12:nonroot
+
+# Set production environment
+ENV NODE_ENV=production
 
 WORKDIR /app
 
-# Copy production dependencies
-COPY --from=builder /app/node_modules ./node_modules
+# Copy only required runtime files
+COPY --chown=nonroot:nonroot --from=builder /app/dist ./dist
+COPY --chown=nonroot:nonroot --from=builder /app/node_modules ./node_modules
+COPY --chown=nonroot:nonroot --from=builder /app/package.json ./package.json
 
-# Copy compiled application
-COPY --from=builder /app/dist ./dist
-
-# Use non-root user for security
-USER nonroot
-
-# Expose application port
+# Application runs as non-root automatically
 EXPOSE 3000
 
-# Start application
+# Healthcheck support via Node runtime
 CMD ["dist/index.js"]
