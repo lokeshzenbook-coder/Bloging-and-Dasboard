@@ -1,38 +1,47 @@
-# ---------- Stage 1: Build ----------
-FROM node:20-alpine AS builder
+# ---------- Stage 1: Dependencies ----------
+FROM node:20-alpine AS deps
 
-# Set working directory
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci
 
-# Copy source code
-COPY . .
+# ---------- Stage 2: Build ----------
+FROM node:20-alpine AS builder
 
-# Build TypeScript project
-RUN npm run build
-
-# ---------- Stage 2: Production ----------
-FROM node:20-alpine
-
-# Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy installed node_modules
+COPY --from=deps /app/node_modules ./node_modules
 
-# Install only production dependencies
-RUN npm install --only=production
+# Copy application source
+COPY . .
 
-# Copy build files from builder stage
+# Build TypeScript application
+RUN npm run build
+
+# Remove dev dependencies after build
+RUN npm prune --omit=dev
+
+# ---------- Stage 3: Production ----------
+FROM gcr.io/distroless/nodejs20-debian12
+
+WORKDIR /app
+
+# Copy production dependencies
+COPY --from=builder /app/node_modules ./node_modules
+
+# Copy compiled application
 COPY --from=builder /app/dist ./dist
+
+# Use non-root user for security
+USER nonroot
 
 # Expose application port
 EXPOSE 3000
 
 # Start application
-CMD ["node", "dist/index.js"]
+CMD ["dist/index.js"]
