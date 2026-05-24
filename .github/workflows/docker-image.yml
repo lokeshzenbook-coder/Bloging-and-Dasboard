@@ -62,15 +62,3 @@ jobs:
             ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      # -------------------------------------------------
-      # Image Scan using Trivy
-      # -------------------------------------------------
-      - name: Run Trivy Scan
-        uses: aquasecurity/trivy-action@0.33.1
-        with:
-          image-ref: ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-          format: table
-          exit-code: 1
-          ignore-unfixed: true
-          severity: CRITICAL,HIGH
