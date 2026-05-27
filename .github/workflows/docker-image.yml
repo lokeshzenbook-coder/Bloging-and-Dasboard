@@ -1,107 +1,107 @@
-name: Docker Build Push and SonarQube Cloud Pipeline
+# name: Docker Build Push and SonarQube Cloud Pipeline
 
-on:
-  push:
-    branches:
-      - main
+# on:
+#   push:
+#     branches:
+#       - main
 
-permissions:
-  contents: read
-  packages: write
-  security-events: write
+# permissions:
+#   contents: read
+#   packages: write
+#   security-events: write
 
-env:
-  IMAGE_NAME: blog
-  REGISTRY: docker.io
-  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+# env:
+#   IMAGE_NAME: blog
+#   REGISTRY: docker.io
+#   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
 
-jobs:
+# jobs:
 
-  # =====================================================
-  # SonarQube Cloud Code Analysis
-  # =====================================================
-  sonarqube:
-    name: SonarQube Cloud Scan
-    runs-on: ubuntu-latest
+#   # =====================================================
+#   # SonarQube Cloud Code Analysis
+#   # =====================================================
+#   sonarqube:
+#     name: SonarQube Cloud Scan
+#     runs-on: ubuntu-latest
 
-    steps:
-      # -------------------------------------------------
-      # Checkout Source Code
-      # -------------------------------------------------
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+#     steps:
+#       # -------------------------------------------------
+#       # Checkout Source Code
+#       # -------------------------------------------------
+#       - name: Checkout Repository
+#         uses: actions/checkout@v4
+#         with:
+#           fetch-depth: 0
 
-      # -------------------------------------------------
-      # Setup Node.js
-      # -------------------------------------------------
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
+#       # -------------------------------------------------
+#       # Setup Node.js
+#       # -------------------------------------------------
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: 22
 
-      # -------------------------------------------------
-      # Install Dependencies
-      # -------------------------------------------------
-      - name: Install Dependencies
-        run: npm ci
+#       # -------------------------------------------------
+#       # Install Dependencies
+#       # -------------------------------------------------
+#       - name: Install Dependencies
+#         run: npm ci
 
-      # -------------------------------------------------
-      # SonarQube Cloud Scan
-      # -------------------------------------------------
-      - name: SonarQube Cloud Scan
-        uses: SonarSource/sonarqube-scan-action@v6
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+#       # -------------------------------------------------
+#       # SonarQube Cloud Scan
+#       # -------------------------------------------------
+#       - name: SonarQube Cloud Scan
+#         uses: SonarSource/sonarqube-scan-action@v6
+#         env:
+#           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-  # =====================================================
-  # Docker Build and Push
-  # =====================================================
-  docker:
-    name: Build and Push Docker Image
-    runs-on: ubuntu-latest
-    needs: sonarqube
+#   # =====================================================
+#   # Docker Build and Push
+#   # =====================================================
+#   docker:
+#     name: Build and Push Docker Image
+#     runs-on: ubuntu-latest
+#     needs: sonarqube
 
-    steps:
-      # -------------------------------------------------
-      # Checkout Source Code
-      # -------------------------------------------------
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+#     steps:
+#       # -------------------------------------------------
+#       # Checkout Source Code
+#       # -------------------------------------------------
+#       - name: Checkout Repository
+#         uses: actions/checkout@v4
 
-      # -------------------------------------------------
-      # Set Docker Image Tag
-      # -------------------------------------------------
-      - name: Set Image Tag
-        run: |
-          echo "IMAGE_TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
+#       # -------------------------------------------------
+#       # Set Docker Image Tag
+#       # -------------------------------------------------
+#       - name: Set Image Tag
+#         run: |
+#           echo "IMAGE_TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
 
-      # -------------------------------------------------
-      # Setup Docker Buildx
-      # -------------------------------------------------
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+#       # -------------------------------------------------
+#       # Setup Docker Buildx
+#       # -------------------------------------------------
+#       - name: Set up Docker Buildx
+#         uses: docker/setup-buildx-action@v3
 
-      # -------------------------------------------------
-      # Login to DockerHub
-      # -------------------------------------------------
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+#       # -------------------------------------------------
+#       # Login to DockerHub
+#       # -------------------------------------------------
+#       - name: Login to DockerHub
+#         uses: docker/login-action@v3
+#         with:
+#           username: ${{ secrets.DOCKERHUB_USERNAME }}
+#           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # -------------------------------------------------
-      # Build and Push Docker Image
-      # -------------------------------------------------
-      - name: Build and Push Docker Image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+#       # -------------------------------------------------
+#       # Build and Push Docker Image
+#       # -------------------------------------------------
+#       - name: Build and Push Docker Image
+#         uses: docker/build-push-action@v6
+#         with:
+#           context: .
+#           push: true
+#           tags: |
+#             ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+#             ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+#           cache-from: type=gha
+#           cache-to: type=gha,mode=max
